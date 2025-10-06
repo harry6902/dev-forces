@@ -1,12 +1,14 @@
 
 
-import Router from 'express';
+import Router, { request } from 'express';
 import { SignUpBody } from '../types';
 import {client} from 'db/client'
 import { email } from 'zod';
 import { Role } from '../../../packages/db/generated/prisma';
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import { sendEmail } from '../sendEmail';
+
+
 
 
 const r= Router();
@@ -42,10 +44,10 @@ r.post("/signup",async (req,res)=>{
     },process.env.EMAIL_JWT_PASSWORD!)
 
     if(process.env.NODE_ENV=="production"){
-        await sendEmail(data.email,`Login to contest platform`, ` Click on the link to login https://contest.com/post_login/?token=${token}`)
+        await sendEmail(data.email,`Login to contest platform`, ` Click on the link to login https://contest.com/user/signin/post/?token=${token}`)
     }
     else{
-        console.log(` Click on the link to login http://localhost:3000/post_login/?token=${token}`)
+        console.log(` Click on the link to login http://localhost:4000/user/signin/post/?token=${token}`)
     }
 
     res.json({
@@ -57,9 +59,12 @@ r.post("/signup",async (req,res)=>{
 
 r.get("/signin/post",(req,res)=>{
     try {
+    
+        const tokens=req.query.token as string;
+        console.log(tokens);
+        const decoded= jwt.verify(tokens,process.env.EMAIL_JWT_PASSWORD!) as JwtPayload;
 
-        const token=req.params as string;
-        const decoded= jwt.verify(token,process.env.EMAIL_JWT_PASSWORD!) as JwtPayload;
+     
 
         if(decoded.userId){
             const token=jwt.sign({
@@ -67,7 +72,7 @@ r.get("/signin/post",(req,res)=>{
             }, process.env.USER_JWT_PASSWORD!);
 
             res.json({
-                token
+                tokens
             })
         }
         else{
